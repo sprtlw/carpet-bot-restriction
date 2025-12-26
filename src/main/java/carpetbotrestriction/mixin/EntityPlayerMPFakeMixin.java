@@ -2,14 +2,18 @@ package carpetbotrestriction.mixin;
 
 import carpet.patches.EntityPlayerMPFake;
 import carpetbotrestriction.CarpetBotRestriction;
-import com.llamalad7.mixinextras.sugar.Local;
+
 import com.mojang.authlib.GameProfile;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import me.lucko.fabric.api.permissions.v0.Permissions;
 import net.minecraft.network.packet.c2s.common.SyncedClientOptions;
+import net.minecraft.registry.RegistryKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.GameMode;
+import net.minecraft.world.World;
 import org.jetbrains.annotations.NotNull;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -32,15 +36,19 @@ public class EntityPlayerMPFakeMixin extends ServerPlayerEntity {
      */
     @Inject(
             method = "createFake",
-            at = @At(value = "INVOKE", target = "Lcom/mojang/authlib/GameProfile;getName()Ljava/lang/String;", shift = At.Shift.AFTER),
+            at = @At("HEAD"),
             cancellable = true,
             remap = false
     )
-    private static void checkIfBotCreateAllowed(@NotNull CallbackInfoReturnable<Boolean> cir, @Local(ordinal = 1) GameProfile bot) {
+    private static void checkIfBotCreateAllowed(
+            String username, MinecraftServer server, Vec3d pos, double yaw, double pitch,
+            RegistryKey<World> dimensionId, GameMode gamemode, boolean flying,
+            @NotNull CallbackInfoReturnable<Boolean> cir) {
         ServerPlayerEntity player = CarpetBotRestriction.CREATE_BOT_SOURCE.getPlayer();
         if (player == null) return;
         UUID playerID = player.getUuid();
-        UUID botID = bot.getId();
+        // Create offline UUID from username - same logic as the createFake method uses
+        UUID botID = net.minecraft.util.Uuids.getOfflinePlayerUuid(username);
         CarpetBotRestriction.LOGGER.info(playerID.toString());
         // Check if the bot about to be spawned is a real player that has logged onto the server
         if (!Permissions.check(CarpetBotRestriction.CREATE_BOT_SOURCE, "carpetbotrestriction.admin.create_real", 2) && CarpetBotRestriction.REAL_PLAYERS.contains(botID)) {
@@ -58,6 +66,6 @@ public class EntityPlayerMPFakeMixin extends ServerPlayerEntity {
         }
         players.add(botID);
         CarpetBotRestriction.BOTS.put(botID, playerID);
-        CarpetBotRestriction.LOGGER.debug("Assigned bot {} to player {}.", bot.getName(), player.getName());
+        CarpetBotRestriction.LOGGER.debug("Assigned bot {} to player {}.", username, player.getName());
     }
 }
