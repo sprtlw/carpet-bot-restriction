@@ -94,32 +94,9 @@ public class CarpetBotRestriction implements ModInitializer {
 							CompletableFuture.runAsync(() -> CONFIG.save());
 							CarpetBotRestriction.say(context.getSource(), "Set removeOnDisconnect to " + value);
 							return 1;
-						})))
-				.then(literal("player")
-					.then(argument("player", EntityArgumentType.player())
-						.then(literal("maxBots")
-							.then(literal("set")
-								.then(argument("maxBots", IntegerArgumentType.integer())
-								.executes(context -> {
-									ServerPlayerEntity player = EntityArgumentType.getPlayer(context, "player");
-									int value = IntegerArgumentType.getInteger(context, "maxBots");
-									if (value < 0) {
-										CarpetBotRestriction.error(context.getSource(), "Number must be >= 0.");
-										return 0;
-									}
-									CONFIG.set(String.format("%s.maxBots", player.getUuid().toString()), value);
-									CompletableFuture.runAsync(() -> CONFIG.save());
-									CarpetBotRestriction.say(context.getSource(), String.format("Set player %s's maxBots to %d", player.getGameProfile().name(), value));
-									return 1;
-								})))
-							.then(literal("unset")
-							.executes(context -> {
-								ServerPlayerEntity player = EntityArgumentType.getPlayer(context, "player");
-								CONFIG.remove(String.format("%s.maxBots", player.getUuid().toString()));
-								CompletableFuture.runAsync(() -> CONFIG.save());
-								CarpetBotRestriction.say(context.getSource(), String.format("Unset %s's maxBots to default value", player.getGameProfile().name()));
-								return 1;
-							}))))));});
+							}))));
+		});
+
 
 	}
 
@@ -136,5 +113,17 @@ public class CarpetBotRestriction implements ModInitializer {
 
 	public static void error(@NotNull ServerCommandSource source, String message) {
 		source.sendError(Text.literal("[Carpet Bot Restriction] ").append(Text.literal(message)));
+	}
+
+	public static int getMaxBots(@NotNull ServerCommandSource source) {
+		int defaultMax = CONFIG.get("defaultMaxBots", 2);
+		
+		// Fetch the maxbots permission value
+		String value = me.lucko.fabric.api.permissions.v0.Options.get(source, "carpetbotrestriction.maxbots", String.valueOf(defaultMax));
+		try {
+			return Integer.parseInt(value);
+		} catch (NumberFormatException e) {
+			return defaultMax;
+		}
 	}
 }
