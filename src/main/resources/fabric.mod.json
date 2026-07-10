@@ -5,7 +5,8 @@
 	"name": "Carpet Bot Restriction",
 	"description": "Allows only the player who created the carpet bot to control it.",
 	"authors": [
-		"DarkCows"
+		"DarkCows",
+		"Junner"
 	],
 	"contact": {
 		"homepage": "https://fabricmc.net/",
