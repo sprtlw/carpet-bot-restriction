@@ -3,6 +3,7 @@ package carpetbotrestriction.mixin;
 import carpet.commands.PlayerCommand;
 import carpetbotrestriction.CarpetBotRestriction;
 import com.llamalad7.mixinextras.sugar.Local;
+import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import me.lucko.fabric.api.permissions.v0.Permissions;
@@ -61,6 +62,13 @@ public class PlayerCommandMixin {
     )
     private static void checkExistingBot(CommandContext<CommandSourceStack> context, CallbackInfoReturnable<Boolean> cir) {
         CommandSourceStack source = context.getSource();
+        String botName = StringArgumentType.getString(context, "player");
+        if (!Permissions.check(source, "carpetbotrestriction.admin.create_real", 2) && CarpetBotRestriction.isRealPlayerName(source, botName)) {
+            CarpetBotRestriction.error(source, "You cannot create a bot with this name - it belongs to a real player.");
+            cir.setReturnValue(true);
+            cir.cancel();
+            return;
+        }
         if (Permissions.check(source, "carpetbotrestriction.admin.create_unlimited", 2)) return;
         ServerPlayer player = source.getPlayer();
         if (player == null) return;

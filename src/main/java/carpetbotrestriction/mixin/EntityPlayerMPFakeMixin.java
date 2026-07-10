@@ -6,7 +6,6 @@ import carpetbotrestriction.CarpetBotRestriction;
 import com.mojang.authlib.GameProfile;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import me.lucko.fabric.api.permissions.v0.Permissions;
-import net.minecraft.core.UUIDUtil;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ClientInformation;
@@ -76,12 +75,12 @@ public class EntityPlayerMPFakeMixin extends ServerPlayer {
             String username, MinecraftServer server, Vec3 pos, double yaw, double pitch,
             ResourceKey<Level> dimensionId, GameType gamemode, boolean flying,
             @NotNull CallbackInfoReturnable<Boolean> cir) {
+        if (CarpetBotRestriction.CREATE_BOT_SOURCE == null) return;
         ServerPlayer player = CarpetBotRestriction.CREATE_BOT_SOURCE.getPlayer();
         if (player == null) return;
         
         // Check if the bot about to be spawned is a real player that has logged onto the server
-        UUID offlineBotID = UUIDUtil.createOfflinePlayerUUID(username);
-        if (!Permissions.check(CarpetBotRestriction.CREATE_BOT_SOURCE, "carpetbotrestriction.admin.create_real", 2) && CarpetBotRestriction.REAL_PLAYERS.contains(offlineBotID)) {
+        if (!Permissions.check(CarpetBotRestriction.CREATE_BOT_SOURCE, "carpetbotrestriction.admin.create_real", 2) && CarpetBotRestriction.isRealPlayerName(CarpetBotRestriction.CREATE_BOT_SOURCE, username)) {
             CarpetBotRestriction.error(CarpetBotRestriction.CREATE_BOT_SOURCE, "You cannot create a bot with this name - it belongs to a real player.");
             cir.setReturnValue(false);
             cir.cancel();

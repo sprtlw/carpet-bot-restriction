@@ -9,10 +9,12 @@ import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.arguments.EntityArgument;
+import net.minecraft.core.UUIDUtil;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.Style;
 import net.minecraft.network.chat.TextColor;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.players.OldUsersConverter;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -136,5 +138,13 @@ public class CarpetBotRestriction implements ModInitializer {
 
 	public static void error(@NotNull CommandSourceStack source, String message) {
 		source.sendFailure(Component.literal("[Carpet Bot Restriction] ").append(Component.literal(message)));
+	}
+
+	public static boolean isRealPlayerName(@NotNull CommandSourceStack source, String username) {
+		UUID resolvedUuid = OldUsersConverter.convertMobOwnerIfNecessary(source.getServer(), username);
+		if (resolvedUuid != null && REAL_PLAYERS.contains(resolvedUuid)) {
+			return true;
+		}
+		return REAL_PLAYERS.contains(UUIDUtil.createOfflinePlayerUUID(username));
 	}
 }
