@@ -7,12 +7,12 @@ import me.lucko.fabric.api.permissions.v0.Permissions;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.command.argument.EntityArgumentType;
-import net.minecraft.server.command.ServerCommandSource;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.text.Style;
-import net.minecraft.text.Text;
-import net.minecraft.text.TextColor;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.commands.arguments.EntityArgument;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.Style;
+import net.minecraft.network.chat.TextColor;
+import net.minecraft.server.level.ServerPlayer;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,7 +23,7 @@ import java.nio.file.Path;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
-import static net.minecraft.server.command.CommandManager.*;
+import static net.minecraft.commands.Commands.*;
 
 public class CarpetBotRestriction implements ModInitializer {
 	public static final String MOD_ID = "carpetbotrestriction";
@@ -31,7 +31,7 @@ public class CarpetBotRestriction implements ModInitializer {
 	public static final Object2ObjectOpenHashMap<UUID, ObjectOpenHashSet<UUID>> PLAYERS = new Object2ObjectOpenHashMap<>();
 	public static final Object2ObjectOpenHashMap<UUID, UUID> BOTS = new Object2ObjectOpenHashMap<>();
 	// Used to track player that tried to create a bot
-	public static ServerCommandSource CREATE_BOT_SOURCE;
+	public static CommandSourceStack CREATE_BOT_SOURCE;
 	public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
 	// File to store UUIDs of real players to prevent them from being used as bots
 	public static final ObjectOpenHashSet<UUID> REAL_PLAYERS = new ObjectOpenHashSet<>();
@@ -96,26 +96,26 @@ public class CarpetBotRestriction implements ModInitializer {
 							return 1;
 						})))
 				.then(literal("player")
-					.then(argument("player", EntityArgumentType.player())
+					.then(argument("player", EntityArgument.player())
 						.then(literal("maxBots")
 							.then(literal("set")
 								.then(argument("maxBots", IntegerArgumentType.integer())
 								.executes(context -> {
-									ServerPlayerEntity player = EntityArgumentType.getPlayer(context, "player");
+									ServerPlayer player = EntityArgument.getPlayer(context, "player");
 									int value = IntegerArgumentType.getInteger(context, "maxBots");
 									if (value < 0) {
 										CarpetBotRestriction.error(context.getSource(), "Number must be >= 0.");
 										return 0;
 									}
-									CONFIG.set(String.format("%s.maxBots", player.getUuid().toString()), value);
+									CONFIG.set(String.format("%s.maxBots", player.getUUID().toString()), value);
 									CompletableFuture.runAsync(() -> CONFIG.save());
 									CarpetBotRestriction.say(context.getSource(), String.format("Set player %s's maxBots to %d", player.getGameProfile().name(), value));
 									return 1;
 								})))
 							.then(literal("unset")
 							.executes(context -> {
-								ServerPlayerEntity player = EntityArgumentType.getPlayer(context, "player");
-								CONFIG.remove(String.format("%s.maxBots", player.getUuid().toString()));
+								ServerPlayer player = EntityArgument.getPlayer(context, "player");
+								CONFIG.remove(String.format("%s.maxBots", player.getUUID().toString()));
 								CompletableFuture.runAsync(() -> CONFIG.save());
 								CarpetBotRestriction.say(context.getSource(), String.format("Unset %s's maxBots to default value", player.getGameProfile().name()));
 								return 1;
@@ -130,11 +130,11 @@ public class CarpetBotRestriction implements ModInitializer {
 		CONFIG.set("removeBotsOnDisconnect", false);
 	}
 
-	public static void say(@NotNull ServerCommandSource source, String message) {
-		source.sendMessage(Text.literal("[Carpet Bot Restriction] ").setStyle(Style.EMPTY.withColor(TextColor.fromRgb(0xF07F1D))).append(Text.literal(message)));
+	public static void say(@NotNull CommandSourceStack source, String message) {
+		source.sendSystemMessage(Component.literal("[Carpet Bot Restriction] ").setStyle(Style.EMPTY.withColor(TextColor.fromRgb(0xF07F1D))).append(Component.literal(message)));
 	}
 
-	public static void error(@NotNull ServerCommandSource source, String message) {
-		source.sendError(Text.literal("[Carpet Bot Restriction] ").append(Text.literal(message)));
+	public static void error(@NotNull CommandSourceStack source, String message) {
+		source.sendFailure(Component.literal("[Carpet Bot Restriction] ").append(Component.literal(message)));
 	}
 }

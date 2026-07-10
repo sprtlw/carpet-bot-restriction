@@ -3,9 +3,9 @@ package carpetbotrestriction.mixin;
 import carpetbotrestriction.CarpetBotRestriction;
 import com.mojang.authlib.GameProfile;
 import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.world.World;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.Level;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -18,10 +18,10 @@ import java.nio.file.Path;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
-@Mixin(ServerPlayerEntity.class)
-public abstract class ServerPlayerEntityMixin extends PlayerEntity {
+@Mixin(ServerPlayer.class)
+public abstract class ServerPlayerEntityMixin extends Player {
 
-    public ServerPlayerEntityMixin(World world, GameProfile gameProfile) {
+    public ServerPlayerEntityMixin(Level world, GameProfile gameProfile) {
         super(world, gameProfile);
     }
 
@@ -34,8 +34,8 @@ public abstract class ServerPlayerEntityMixin extends PlayerEntity {
             at = @At("CTOR_HEAD")
     )
     private void detectRealPlayerJoin(CallbackInfo ci) {
-        if (((ServerPlayerEntity)(Object)this).getClass() == ServerPlayerEntity.class) {
-            CarpetBotRestriction.REAL_PLAYERS.add(this.getUuid());
+        if (((ServerPlayer)(Object)this).getClass() == ServerPlayer.class) {
+            CarpetBotRestriction.REAL_PLAYERS.add(this.getUUID());
             CompletableFuture.runAsync(() -> {
                 try (BufferedWriter out = Files.newBufferedWriter(path)) {
                     for (UUID uuid : CarpetBotRestriction.REAL_PLAYERS) {

@@ -6,9 +6,9 @@ import com.llamalad7.mixinextras.sugar.Local;
 import com.mojang.brigadier.context.CommandContext;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import me.lucko.fabric.api.permissions.v0.Permissions;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.server.command.ServerCommandSource;
-import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.player.Player;
 import org.jetbrains.annotations.NotNull;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -28,18 +28,18 @@ public class PlayerCommandMixin {
             cancellable = true,
             remap = false
     )
-    private static void checkIfOwnsBot(@NotNull CommandContext<ServerCommandSource> context, CallbackInfoReturnable<Boolean> cir, @Local(ordinal = 0) PlayerEntity bot) {
-        ServerCommandSource source = context.getSource();
+    private static void checkIfOwnsBot(@NotNull CommandContext<CommandSourceStack> context, CallbackInfoReturnable<Boolean> cir, @Local(ordinal = 0) Player bot) {
+        CommandSourceStack source = context.getSource();
         if (Permissions.check(source, "carpetbotrestriction.admin.manipulate_all", 2)) return;
         if (!Permissions.check(source, "carpetbotrestriction.user.manipulate_own", true)) {
             CarpetBotRestriction.error(source, "You are not allowed to manipulate bots; contact the server administrator for permission.");
             cir.setReturnValue(true);
             cir.cancel();
         }
-        ServerPlayerEntity player = source.getPlayer();
+        ServerPlayer player = source.getPlayer();
         if (player == null) return;
-        UUID botID = bot.getUuid();
-        UUID playerID = player.getUuid();
+        UUID botID = bot.getUUID();
+        UUID playerID = player.getUUID();
         if (botID.equals(playerID)) return;
         ObjectOpenHashSet<UUID> botList = CarpetBotRestriction.PLAYERS.get(playerID);
         if (botList == null || !botList.contains(botID)) {
@@ -59,12 +59,12 @@ public class PlayerCommandMixin {
             cancellable = true,
             remap = false
     )
-    private static void checkExistingBot(CommandContext<ServerCommandSource> context, CallbackInfoReturnable<Boolean> cir) {
-        ServerCommandSource source = context.getSource();
+    private static void checkExistingBot(CommandContext<CommandSourceStack> context, CallbackInfoReturnable<Boolean> cir) {
+        CommandSourceStack source = context.getSource();
         if (Permissions.check(source, "carpetbotrestriction.admin.create_unlimited", 2)) return;
-        ServerPlayerEntity player = source.getPlayer();
+        ServerPlayer player = source.getPlayer();
         if (player == null) return;
-        UUID playerID = player.getUuid();
+        UUID playerID = player.getUUID();
         ObjectOpenHashSet<UUID> botList = CarpetBotRestriction.PLAYERS.get(playerID);
         int playerBotLimit = CarpetBotRestriction.CONFIG.get(String.format("%s.maxBots", playerID),
                 CarpetBotRestriction.CONFIG.get("defaultMaxBots", 2));
@@ -90,15 +90,15 @@ public class PlayerCommandMixin {
             cancellable = true,
             remap = false
     )
-    private static void canShadow(@NotNull CommandContext<ServerCommandSource> context, CallbackInfoReturnable<Integer> cir) {
-        ServerCommandSource source = context.getSource();
+    private static void canShadow(@NotNull CommandContext<CommandSourceStack> context, CallbackInfoReturnable<Integer> cir) {
+        CommandSourceStack source = context.getSource();
         if (Permissions.check(source, "carpetbotrestriction.admin.create_unlimited", 2)) return;
         if (!Permissions.check(source, "carpetbotrestriction.user.shadow", true)) {
             CarpetBotRestriction.error(source, "You are not allowed to shadow; contact the server administrator for permission.");
             cir.setReturnValue(0);
             cir.cancel();
         }
-        ServerPlayerEntity player = source.getPlayer();
+        ServerPlayer player = source.getPlayer();
         if (player == null) return;
         if (CarpetBotRestriction.CONFIG.get("removeOnDisconnect", false)) {
             CarpetBotRestriction.error(source, "You cannot shadow: this server is configured so your bots will be removed on disconnect");
@@ -106,7 +106,7 @@ public class PlayerCommandMixin {
             cir.setReturnValue(0);
             cir.cancel();
         }
-        UUID playerID = player.getUuid();
+        UUID playerID = player.getUUID();
         ObjectOpenHashSet<UUID> botList = CarpetBotRestriction.PLAYERS.get(playerID);
         int playerBotLimit = CarpetBotRestriction.CONFIG.get(String.format("%s.maxBots", playerID.toString()),
                 CarpetBotRestriction.CONFIG.get("defaultMaxBots", 2));
@@ -126,7 +126,7 @@ public class PlayerCommandMixin {
             at = @At("HEAD"),
             remap = false
     )
-    private static void trackSpawnSource(@NotNull CommandContext<ServerCommandSource> context, CallbackInfoReturnable<Integer> cir) {
+    private static void trackSpawnSource(@NotNull CommandContext<CommandSourceStack> context, CallbackInfoReturnable<Integer> cir) {
         // Track which player tried to spawn bot
         CarpetBotRestriction.CREATE_BOT_SOURCE = context.getSource();
     }
