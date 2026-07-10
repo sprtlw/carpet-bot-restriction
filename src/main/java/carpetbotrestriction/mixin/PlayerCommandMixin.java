@@ -77,7 +77,7 @@ public class PlayerCommandMixin {
         int playerBotLimit = CarpetBotRestriction.CONFIG.get(String.format("%s.maxBots", playerID),
                 CarpetBotRestriction.CONFIG.get("defaultMaxBots", 2));
         int currentBotCount = botList == null ? 0 : botList.size();
-        if (!Permissions.check(source, "carpetbotrestriction.user.create_own", true)) {
+        if (!Permissions.check(source, "carpetbotrestriction.user.create_own", false)) {
             CarpetBotRestriction.error(source, "You are not allowed to create a new bot; contact the server administrator for permission.");
             cir.setReturnValue(true);
             cir.cancel();

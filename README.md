@@ -15,7 +15,7 @@ If LuckPerms is installed, using the `/cbr` command requires `carpetbotrestricti
 
 ## LuckPerms permissions:
 ### Regular permissions:
-* `carpetbotrestriction.user.create_own`: allows user to create a new bot (default: `true`).
+* `carpetbotrestriction.user.create_own`: allows user to create a new bot (default: `false`).
 * `carpetbotrestriction.user.manipulate_own`: allows user to manipulate/remove the bots they create (default: `true`).
 * `carpetbotrestriction.user.shadow`: allows user to shadow (default: `true`).
 ### Admin permissions:
