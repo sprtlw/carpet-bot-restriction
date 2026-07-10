@@ -76,12 +76,13 @@ public class PlayerCommandMixin {
         ObjectOpenHashSet<UUID> botList = CarpetBotRestriction.PLAYERS.get(playerID);
         int playerBotLimit = CarpetBotRestriction.CONFIG.get(String.format("%s.maxBots", playerID),
                 CarpetBotRestriction.CONFIG.get("defaultMaxBots", 2));
+        int currentBotCount = botList == null ? 0 : botList.size();
         if (!Permissions.check(source, "carpetbotrestriction.user.create_own", true)) {
             CarpetBotRestriction.error(source, "You are not allowed to create a new bot; contact the server administrator for permission.");
             cir.setReturnValue(true);
             cir.cancel();
         }
-        if (botList != null && botList.size() >= playerBotLimit) {
+        if (currentBotCount >= playerBotLimit) {
             CarpetBotRestriction.error(source, String.format("You cannot have more than %d bots.", playerBotLimit));
             CarpetBotRestriction.LOGGER.debug("Prevented {} from spawning new bot: Limit is {} bots.", player.getGameProfile().name(), playerBotLimit);
             cir.setReturnValue(true);
@@ -118,7 +119,8 @@ public class PlayerCommandMixin {
         ObjectOpenHashSet<UUID> botList = CarpetBotRestriction.PLAYERS.get(playerID);
         int playerBotLimit = CarpetBotRestriction.CONFIG.get(String.format("%s.maxBots", playerID.toString()),
                 CarpetBotRestriction.CONFIG.get("defaultMaxBots", 2));
-        if ((botList != null && botList.size() >= playerBotLimit)) {
+        int currentBotCount = botList == null ? 0 : botList.size();
+        if (currentBotCount >= playerBotLimit) {
             CarpetBotRestriction.error(source, String.format("You cannot have more than %d bots. Shadowing will create another bot.", playerBotLimit));
             CarpetBotRestriction.LOGGER.debug("Prevented {} from shadowing: Limit is {} bots.", player.getGameProfile().name(), playerBotLimit);
             cir.setReturnValue(0);
