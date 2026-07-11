@@ -6,7 +6,8 @@
 	"description": "Allows only the player who created the carpet bot to control it.",
 	"authors": [
 		"DarkCows",
-		"Junner"
+		"Junner",
+		"sprtlw"
 	],
 	"contact": {
 		"homepage": "https://fabricmc.net/",
