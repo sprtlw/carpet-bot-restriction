@@ -6,14 +6,14 @@ import carpetbotrestriction.CarpetBotRestriction;
 import com.mojang.authlib.GameProfile;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import me.lucko.fabric.api.permissions.v0.Permissions;
-import net.minecraft.network.packet.c2s.common.SyncedClientOptions;
-import net.minecraft.registry.RegistryKey;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.GameMode;
-import net.minecraft.world.World;
+import net.minecraft.server.level.ClientInformation;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.GameType;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.NotNull;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -24,9 +24,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import java.util.UUID;
 
 @Mixin(EntityPlayerMPFake.class)
-public class EntityPlayerMPFakeMixin extends ServerPlayerEntity {
+public class EntityPlayerMPFakeMixin extends ServerPlayer {
 
-    public EntityPlayerMPFakeMixin(MinecraftServer server, ServerWorld world, GameProfile profile, SyncedClientOptions clientOptions) {
+    public EntityPlayerMPFakeMixin(MinecraftServer server, ServerLevel world, GameProfile profile, ClientInformation clientOptions) {
         super(server, world, profile, clientOptions);
     }
 
@@ -38,14 +38,14 @@ public class EntityPlayerMPFakeMixin extends ServerPlayerEntity {
             at = @At("TAIL"),
             remap = false
     )
-    private void registerBotOnCreate(MinecraftServer server, ServerWorld world, GameProfile profile, SyncedClientOptions cli, boolean shadow, CallbackInfo ci) {
+    private void registerBotOnCreate(MinecraftServer server, ServerLevel world, GameProfile profile, ClientInformation cli, boolean shadow, CallbackInfo ci) {
         // Skip shadow players - they're clones of real players
         if (shadow) return;
         
-        ServerPlayerEntity player = CarpetBotRestriction.CREATE_BOT_SOURCE.getPlayer();
+        ServerPlayer player = CarpetBotRestriction.CREATE_BOT_SOURCE.getPlayer();
         if (player == null) return;
         
-        UUID playerID = player.getUuid();
+        UUID playerID = player.getUUID();
         UUID botID = profile.id();
         
         ObjectOpenHashSet<UUID> players;
@@ -72,19 +72,18 @@ public class EntityPlayerMPFakeMixin extends ServerPlayerEntity {
             remap = false
     )
     private static void checkIfBotCreateAllowed(
-            String username, MinecraftServer server, Vec3d pos, double yaw, double pitch,
-            RegistryKey<World> dimensionId, GameMode gamemode, boolean flying,
+            String username, MinecraftServer server, Vec3 pos, double yaw, double pitch,
+            ResourceKey<Level> dimensionId, GameType gamemode, boolean flying,
             @NotNull CallbackInfoReturnable<Boolean> cir) {
-        ServerPlayerEntity player = CarpetBotRestriction.CREATE_BOT_SOURCE.getPlayer();
+        if (CarpetBotRestriction.CREATE_BOT_SOURCE == null) return;
+        ServerPlayer player = CarpetBotRestriction.CREATE_BOT_SOURCE.getPlayer();
         if (player == null) return;
         
         // Check if the bot about to be spawned is a real player that has logged onto the server
-        UUID offlineBotID = net.minecraft.util.Uuids.getOfflinePlayerUuid(username);
-        if (!Permissions.check(CarpetBotRestriction.CREATE_BOT_SOURCE, "carpetbotrestriction.admin.create_real", 2) && CarpetBotRestriction.REAL_PLAYERS.contains(offlineBotID)) {
+        if (!Permissions.check(CarpetBotRestriction.CREATE_BOT_SOURCE, "carpetbotrestriction.admin.create_real", 2) && CarpetBotRestriction.isRealPlayerName(CarpetBotRestriction.CREATE_BOT_SOURCE, username)) {
             CarpetBotRestriction.error(CarpetBotRestriction.CREATE_BOT_SOURCE, "You cannot create a bot with this name - it belongs to a real player.");
             cir.setReturnValue(false);
             cir.cancel();
         }
     }
 }
-

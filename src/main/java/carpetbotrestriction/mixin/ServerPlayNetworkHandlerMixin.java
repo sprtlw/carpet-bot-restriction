@@ -2,11 +2,11 @@ package carpetbotrestriction.mixin;
 
 import carpetbotrestriction.CarpetBotRestriction;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
-import net.minecraft.network.DisconnectionInfo;
+import net.minecraft.network.DisconnectionDetails;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.PlayerManager;
-import net.minecraft.server.network.ServerPlayNetworkHandler;
-import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.network.ServerGamePacketListenerImpl;
+import net.minecraft.server.players.PlayerList;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
@@ -15,19 +15,19 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.util.UUID;
 
-@Mixin(ServerPlayNetworkHandler.class)
+@Mixin(ServerGamePacketListenerImpl.class)
 public abstract class ServerPlayNetworkHandlerMixin {
-    @Shadow public abstract ServerPlayerEntity getPlayer();
+    @Shadow public abstract ServerPlayer getPlayer();
 
     /**
      * If a bot disconnects, remove from lists
      */
     @Inject(
-            method = "onDisconnected",
+            method = "onDisconnect",
             at = @At("HEAD")
     )
-    private void logDisconnect(DisconnectionInfo info, CallbackInfo ci) {
-        UUID entity = this.getPlayer().getUuid();
+    private void logDisconnect(DisconnectionDetails info, CallbackInfo ci) {
+        UUID entity = this.getPlayer().getUUID();
         UUID player = CarpetBotRestriction.BOTS.remove(entity);
         // If disconnected player is a bot, remove it from the lists
         if (player != null) {
@@ -41,15 +41,15 @@ public abstract class ServerPlayNetworkHandlerMixin {
         if (!CarpetBotRestriction.CONFIG.get("removeOnDisconnect", false)) return;
         ObjectOpenHashSet<UUID> bots = CarpetBotRestriction.PLAYERS.get(entity);
         if (bots == null) return;
-        MinecraftServer mc = this.getPlayer().getEntityWorld().getServer();
+        MinecraftServer mc = this.getPlayer().level().getServer();
         if (mc == null) return;
-        PlayerManager playerManager = mc.getPlayerManager();
+        PlayerList playerManager = mc.getPlayerList();
         if (playerManager == null) return;
         for (UUID bot : bots) {
             if (bot == null) continue;
-            ServerPlayerEntity toRemove = playerManager.getPlayer(bot);
+            ServerPlayer toRemove = playerManager.getPlayer(bot);
             if (toRemove == null) continue;
-            toRemove.kill(toRemove.getEntityWorld());
+            toRemove.kill(toRemove.level());
             bots.remove(bot);
         }
         if (bots.isEmpty()) {
